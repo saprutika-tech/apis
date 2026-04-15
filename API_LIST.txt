@@ -1,0 +1,958 @@
+================================================================================
+                         COMPLETE API DOCUMENTATION
+                         Base URL: https://staff-mgt.onrender.com
+================================================================================
+
+Total APIs: 19
+Auth Header (where required): Authorization: Bearer <token_from_login>
+
+================================================================================
+                            STAFF APIs (/api/staff)
+================================================================================
+
+--------------------------------------------------------------------------------
+1. HEALTH CHECK
+--------------------------------------------------------------------------------
+   Method:  GET
+   URL:     /api/health
+   Auth:    No
+   Body:    None
+
+   Use Case: Check if the server is running.
+
+   Response (200):
+   {
+     "success": true,
+     "message": "API is running.",
+     "data": {
+       "api": "running",
+       "timestamp": "2026-04-14T10:00:00.000Z",
+       "environment": "development"
+     }
+   }
+
+--------------------------------------------------------------------------------
+2. STAFF SIGNUP
+--------------------------------------------------------------------------------
+   Method:  POST
+   URL:     /api/staff/signup
+   Auth:    No
+   Body:
+   {
+     "name": "John Doe",
+     "mobile": "9876543210",
+     "password": "password123",
+     "confirmPassword": "password123",
+     "email": "john@example.com"          // optional
+   }
+
+   Use Case: Register a new staff member.
+
+   Response (201):
+   {
+     "success": true,
+     "message": "Staff registered successfully.",
+     "token": "eyJhbGciOiJIUzI1NiIs...",
+     "data": {
+       "_id": "662f...",
+       "name": "John Doe",
+       "mobile": "9876543210",
+       "email": "john@example.com",
+       "role": "staff",
+       "isLoggedIn": false,
+       "lastLoginAt": null,
+       "lastLogoutAt": null,
+       "createdAt": "...",
+       "updatedAt": "..."
+     }
+   }
+
+--------------------------------------------------------------------------------
+3. STAFF LOGIN
+--------------------------------------------------------------------------------
+   Method:  POST
+   URL:     /api/staff/login
+   Auth:    No
+   Body:
+   {
+     "mobile": "9876543210",
+     "password": "password123"
+   }
+
+   Use Case: Staff login. Returns token + inTime (when staff logged in).
+
+   Response (200):
+   {
+     "success": true,
+     "message": "Login successful.",
+     "token": "eyJhbGciOiJIUzI1NiIs...",
+     "data": {
+       "_id": "662f...",
+       "name": "John Doe",
+       "mobile": "9876543210",
+       "email": "john@example.com",
+       "role": "staff",
+       "isLoggedIn": true,
+       "lastLoginAt": "2026-04-14T10:00:00.000Z",
+       "lastLogoutAt": null,
+       "inTime": "2026-04-14T10:00:00.000Z",
+       "createdAt": "...",
+       "updatedAt": "..."
+     }
+   }
+
+--------------------------------------------------------------------------------
+4. STAFF LOGOUT
+--------------------------------------------------------------------------------
+   Method:  POST
+   URL:     /api/staff/logout
+   Auth:    Yes (Bearer Token)
+   Body:    None
+
+   Use Case: Staff logs out. Returns in-time and out-time.
+
+   Response (200):
+   {
+     "success": true,
+     "message": "Logout successful.",
+     "data": {
+       "name": "John Doe",
+       "inTime": "2026-04-14T10:00:00.000Z",
+       "outTime": "2026-04-14T18:30:00.000Z"
+     }
+   }
+
+--------------------------------------------------------------------------------
+5. UPDATE PROFILE
+--------------------------------------------------------------------------------
+   Method:  PUT
+   URL:     /api/staff/update-profile
+   Auth:    Yes (Bearer Token)
+   Body:
+   {
+     "name": "John Updated",             // optional
+     "email": "newemail@example.com",     // optional
+     "profileImage": "https://..."        // optional
+   }
+
+   Use Case: Update staff profile info (name, email, or profile image).
+
+   Response (200):
+   {
+     "success": true,
+     "message": "Profile updated successfully.",
+     "data": {
+       "_id": "662f...",
+       "name": "John Updated",
+       "mobile": "9876543210",
+       "email": "newemail@example.com",
+       "profileImage": "https://...",
+       "role": "staff"
+     }
+   }
+
+--------------------------------------------------------------------------------
+6. CHANGE PASSWORD
+--------------------------------------------------------------------------------
+   Method:  POST
+   URL:     /api/staff/change-password
+   Auth:    Yes (Bearer Token)
+   Body:
+   {
+     "currentPassword": "password123",
+     "newPassword": "newpass456",
+     "confirmPassword": "newpass456"
+   }
+
+   Use Case: Change password while logged in.
+
+   Response (200):
+   {
+     "success": true,
+     "message": "Password changed successfully."
+   }
+
+--------------------------------------------------------------------------------
+7. FORGOT PASSWORD (2 Steps in 1 API)
+--------------------------------------------------------------------------------
+   Method:  POST
+   URL:     /api/staff/forgot-password
+   Auth:    No
+
+   --- Step 1: Request OTP ---
+   Body:
+   {
+     "mobile": "9876543210"
+   }
+
+   Use Case: Send 6-digit OTP to staff's registered email.
+
+   Response (200):
+   {
+     "success": true,
+     "message": "OTP sent to jo***@example.com",
+     "expiresIn": "10 minutes"
+   }
+
+   --- Step 2: Reset Password using OTP ---
+   Body:
+   {
+     "mobile": "9876543210",
+     "otp": "482916",
+     "newPassword": "newpass456",
+     "confirmPassword": "newpass456"
+   }
+
+   Use Case: Reset password using OTP received on email.
+
+   Response (200):
+   {
+     "success": true,
+     "message": "Password has been reset successfully. You can now login with your new password."
+   }
+
+--------------------------------------------------------------------------------
+8. STAFF CHECK-IN (User Attendance)
+--------------------------------------------------------------------------------
+   Method:  POST
+   URL:     /api/staff/checkin
+   Auth:    Yes (Bearer Token)
+   Body:
+   {
+     "userId": "662f...",                  // or "id": "662f..." — both work
+     "bookedHours": 3,
+     "baseAmount": 300,
+     "extraChargePerHour": 120,            // optional (default: 0)
+     "paymentMethod": "cash",              // optional (cash/card/upi/online)
+     "notes": "Window seat"                // optional
+   }
+
+   Note: "userId" is optional. Skip it for walk-in customers.
+         You can pass either "userId" or "id" — both accepted.
+
+   Use Case: Staff checks in a user/customer. Creates Attendance + Billing.
+
+   Response (201):
+   {
+     "success": true,
+     "message": "Check-in successful.",
+     "data": {
+       "attendance": {
+         "_id": "663a...",
+         "checkIn": "2026-04-14T10:15:00.000Z",
+         "expectedCheckOut": "2026-04-14T13:15:00.000Z",
+         "bookedHours": 3,
+         "status": "checked_in"
+       },
+       "billing": {
+         "billId": "663b...",
+         "billNumber": "0001",
+         "baseAmount": 300,
+         "totalAmount": 300,
+         "paymentMethod": "cash"
+       },
+       "user": {
+         "_id": "662f...",
+         "name": "Ravi",
+         "phone": "9999999999"
+       },
+       "staff": {
+         "_id": "662e...",
+         "name": "John Doe",
+         "inTime": "2026-04-14T10:00:00.000Z"
+       }
+     }
+   }
+
+--------------------------------------------------------------------------------
+9. STAFF CHECK-OUT (User Attendance) — Any staff can checkout
+--------------------------------------------------------------------------------
+   Method:  POST
+   URL:     /api/staff/checkout
+   Auth:    Yes (Bearer Token)
+   Body:
+   {
+     "attendanceId": "663a..."
+   }
+
+   Note: Use attendance._id from check-in response.
+         ANY logged-in staff can checkout ANY user — not just the one
+         who checked them in. Response shows who did check-in vs checkout.
+
+   Use Case: Staff checks out a user. Auto-calculates actual hours,
+             extra hours, and extra charges. Tracks which staff did it.
+
+   Response (200):
+   {
+     "success": true,
+     "message": "Check-out successful.",
+     "data": {
+       "attendance": {
+         "_id": "663a...",
+         "checkIn": "2026-04-14T10:15:00.000Z",
+         "checkOut": "2026-04-14T14:15:00.000Z",
+         "bookedHours": 3,
+         "actualHours": 4.0,
+         "extraHours": 1.0,
+         "status": "checked_out"
+       },
+       "billing": {
+         "billId": "663b...",
+         "billNumber": "0001",
+         "baseAmount": 300,
+         "extraAmount": 120,
+         "totalAmount": 420,
+         "paymentStatus": "unpaid"
+       },
+       "user": {
+         "_id": "662f...",
+         "name": "Ravi",
+         "phone": "9999999999"
+       },
+       "checkedInBy": {
+         "_id": "662e...",
+         "name": "John Doe",
+         "time": "2026-04-14T10:15:00.000Z"
+       },
+       "checkedOutBy": {
+         "_id": "662x...",
+         "name": "Jane Smith",
+         "time": "2026-04-14T14:15:00.000Z"
+       }
+     }
+   }
+
+--------------------------------------------------------------------------------
+10. ALL STAFF LIST  [NEW]
+--------------------------------------------------------------------------------
+   Method:  GET
+   URL:     /api/staff/list
+   Auth:    Yes (Bearer Token)
+   Body:    None
+
+   Use Case: Get list of all registered staff with login status.
+
+   Response (200):
+   {
+     "success": true,
+     "message": "Staff list retrieved successfully.",
+     "count": 3,
+     "data": [
+       {
+         "_id": "662e...",
+         "name": "John Doe",
+         "mobile": "9876543210",
+         "email": "john@example.com",
+         "role": "staff",
+         "profileImage": null,
+         "isLoggedIn": true,
+         "lastLoginAt": "2026-04-14T10:00:00.000Z",
+         "lastLogoutAt": null,
+         "createdAt": "2026-04-10T08:00:00.000Z"
+       },
+       {
+         "_id": "662x...",
+         "name": "Jane Smith",
+         "mobile": "9876543211",
+         "email": "jane@example.com",
+         "role": "staff",
+         "profileImage": null,
+         "isLoggedIn": false,
+         "lastLoginAt": "2026-04-13T09:00:00.000Z",
+         "lastLogoutAt": "2026-04-13T18:00:00.000Z",
+         "createdAt": "2026-04-11T08:00:00.000Z"
+       }
+     ]
+   }
+
+--------------------------------------------------------------------------------
+11. ALL USERS LIST  [NEW]
+--------------------------------------------------------------------------------
+   Method:  GET
+   URL:     /api/staff/users
+   Auth:    Yes (Bearer Token)
+   Body:    None
+
+   Use Case: Get list of all registered users with their current
+             check-in status (isCheckedIn: true/false).
+
+   Response (200):
+   {
+     "success": true,
+     "message": "Users list retrieved successfully.",
+     "count": 2,
+     "data": [
+       {
+         "_id": "662f...",
+         "name": "Ravi",
+         "email": "ravi@example.com",
+         "phone": "9999999999",
+         "qrCode": "QR_USER_001",
+         "address": "Mumbai",
+         "isCheckedIn": true,
+         "createdAt": "2026-04-12T08:00:00.000Z"
+       },
+       {
+         "_id": "662g...",
+         "name": "Priya",
+         "email": "priya@example.com",
+         "phone": "8888888888",
+         "qrCode": "QR_USER_002",
+         "address": "Delhi",
+         "isCheckedIn": false,
+         "createdAt": "2026-04-12T09:00:00.000Z"
+       }
+     ]
+   }
+
+--------------------------------------------------------------------------------
+12. ATTENDANCE HISTORY  [NEW]
+--------------------------------------------------------------------------------
+   Method:  GET
+   URL:     /api/staff/attendance-history
+   Auth:    Yes (Bearer Token)
+   Body:    None
+
+   Query Params (all optional — combine as needed):
+     ?status=checked_in              → only active check-ins
+     ?status=checked_out             → only completed
+     ?userId=662f...                 → filter by user
+     ?staffId=662e...                → filter by check-in staff
+     ?date=2026-04-14                → filter by date
+
+   Examples:
+     /api/staff/attendance-history                          → all records
+     /api/staff/attendance-history?status=checked_in        → currently active
+     /api/staff/attendance-history?date=2026-04-14          → today's records
+     /api/staff/attendance-history?staffId=662e...          → specific staff's check-ins
+
+   Use Case: View all check-in/check-out history with full details.
+             Shows which staff checked in and which staff checked out.
+
+   Response (200):
+   {
+     "success": true,
+     "message": "Attendance history retrieved successfully.",
+     "count": 2,
+     "data": [
+       {
+         "_id": "663a...",
+         "user": {
+           "_id": "662f...",
+           "name": "Ravi",
+           "phone": "9999999999"
+         },
+         "checkIn": "2026-04-14T10:15:00.000Z",
+         "checkOut": "2026-04-14T14:15:00.000Z",
+         "bookedHours": 3,
+         "expectedCheckOut": "2026-04-14T13:15:00.000Z",
+         "actualHours": 4.0,
+         "extraHours": 1.0,
+         "baseAmount": 300,
+         "extraAmount": 120,
+         "totalAmount": 420,
+         "status": "checked_out",
+         "notes": "Window seat",
+         "bill": {
+           "billNumber": "0001",
+           "paymentStatus": "unpaid",
+           "paymentMethod": "cash"
+         },
+         "checkedInBy": {
+           "_id": "662e...",
+           "name": "John Doe",
+           "mobile": "9876543210"
+         },
+         "checkedOutBy": {
+           "_id": "662x...",
+           "name": "Jane Smith",
+           "mobile": "9876543211"
+         },
+         "createdAt": "2026-04-14T10:15:00.000Z"
+       },
+       {
+         "_id": "663b...",
+         "user": { "name": "Walk-in" },
+         "checkIn": "2026-04-14T11:00:00.000Z",
+         "checkOut": null,
+         "bookedHours": 2,
+         "expectedCheckOut": "2026-04-14T13:00:00.000Z",
+         "actualHours": 0,
+         "extraHours": 0,
+         "baseAmount": 200,
+         "extraAmount": 0,
+         "totalAmount": 200,
+         "status": "checked_in",
+         "notes": null,
+         "bill": {
+           "billNumber": "0002",
+           "paymentStatus": "unpaid",
+           "paymentMethod": "cash"
+         },
+         "checkedInBy": {
+           "_id": "662e...",
+           "name": "John Doe",
+           "mobile": "9876543210"
+         },
+         "checkedOutBy": null,
+         "createdAt": "2026-04-14T11:00:00.000Z"
+       }
+     ]
+   }
+
+
+================================================================================
+                            USER APIs (/api/user)
+================================================================================
+
+--------------------------------------------------------------------------------
+13. USER DETAILS (QR Code Scan)
+--------------------------------------------------------------------------------
+   Method:  GET
+   URL:     /api/user/details?qr_code=QR_USER_001
+   Auth:    Yes (Bearer Token)
+   Body:    None
+
+   Use Case: After scanning a user's QR code, get their details,
+             current check-in status, and unpaid bills total.
+
+   Response (200):
+   {
+     "success": true,
+     "message": "User details retrieved successfully.",
+     "data": {
+       "user": {
+         "_id": "662f...",
+         "name": "Ravi",
+         "email": "ravi@example.com",
+         "phone": "9999999999",
+         "qrCode": "QR_USER_001",
+         "address": "Mumbai"
+       },
+       "isCheckedIn": true,
+       "timeInfo": {
+         "checkIn": "2026-04-14T10:15:00.000Z",
+         "bookedHours": 3,
+         "expectedCheckOut": "2026-04-14T13:15:00.000Z",
+         "remainingMinutes": 120,
+         "isOvertime": false,
+         "overtimeMinutes": 0
+       },
+       "unpaidAmount": 420
+     }
+   }
+
+--------------------------------------------------------------------------------
+14. USER CHECK-IN (Bill-based)
+--------------------------------------------------------------------------------
+   Method:  POST
+   URL:     /api/user/checkin
+   Auth:    Yes (Bearer Token)
+   Body:
+   {
+     "billId": "663b..."
+   }
+
+   Use Case: Check in a user using an existing billing record.
+             Bill must exist and not already be used for check-in.
+
+   Response (201):
+   {
+     "success": true,
+     "message": "Checked in successfully using bill.",
+     "data": {
+       "attendanceId": "663a...",
+       "billId": "663b...",
+       "billNumber": "0001",
+       "staffName": "John Doe",
+       "userName": "Ravi",
+       "userMobile": "9999999999",
+       "checkIn": "2026-04-14T10:15:00.000Z",
+       "bookedHours": 3,
+       "expectedCheckOut": "2026-04-14T13:15:00.000Z",
+       "ratePerHour": 120,
+       "baseAmount": 300,
+       "note": "Extra time will be charged at Rs.120/hour (rounded up to next full hour)",
+       "status": "checked_in"
+     }
+   }
+
+--------------------------------------------------------------------------------
+15. USER CHECK-OUT (Bill-based) — Any staff can checkout
+--------------------------------------------------------------------------------
+   Method:  POST
+   URL:     /api/user/checkout
+   Auth:    Yes (Bearer Token)
+   Body:
+   {
+     "billId": "663b..."
+   }
+
+   Note: ANY logged-in staff can checkout. Response shows who checked
+         in vs who checked out.
+
+   Use Case: Check out a user by billId. Auto-calculates extra time.
+             Sends email bill if user has email.
+
+   Response (200):
+   {
+     "success": true,
+     "message": "Checked out successfully.",
+     "data": {
+       "attendanceId": "663a...",
+       "billId": "663b...",
+       "billNumber": "0001",
+       "userName": "Ravi",
+       "userMobile": "9999999999",
+       "checkIn": "2026-04-14T10:15:00.000Z",
+       "checkOut": "2026-04-14T14:15:00.000Z",
+       "duration": "4h 0m",
+       "bookedHours": 3,
+       "actualHours": 4.0,
+       "totalBilledHours": 4,
+       "extraHours": 1,
+       "ratePerHour": 120,
+       "baseAmount": 300,
+       "extraAmount": 120,
+       "totalAmount": 420,
+       "paymentMethod": "cash",
+       "paymentStatus": "unpaid",
+       "extraDeductionStatus": "pending",
+       "checkedInBy": {
+         "_id": "662e...",
+         "name": "John Doe",
+         "time": "2026-04-14T10:15:00.000Z"
+       },
+       "checkedOutBy": {
+         "_id": "662x...",
+         "name": "Jane Smith",
+         "time": "2026-04-14T14:15:00.000Z"
+       }
+     }
+   }
+
+--------------------------------------------------------------------------------
+16. CREATE BILLING (Manual / Walk-in)
+--------------------------------------------------------------------------------
+   Method:  POST
+   URL:     /api/user/billing
+   Auth:    Yes (Bearer Token)
+   Body:
+   {
+     "name": "Ravi",
+     "mobile": "9999999999",
+     "email": "ravi@example.com",         // optional
+     "bookedHours": 2,
+     "ratePerHour": 100,
+     "actualHours": 3.5,
+     "paymentMethod": "upi",              // cash/card/upi/online
+     "paymentStatus": "paid",             // optional (default: paid)
+     "description": "Gaming session"      // optional
+   }
+
+   Use Case: Create a standalone bill (e.g., for walk-in users).
+             Auto-calculates extra hours and charges.
+             Example: booked 2hrs @100, stayed 3.5hrs
+             = base 200 + extra 2hrs*100 = Rs.400 total
+
+   Response (201):
+   {
+     "success": true,
+     "message": "Bill created successfully.",
+     "data": {
+       "billId": "663c...",
+       "billNumber": "0002",
+       "staffName": "John Doe",
+       "name": "Ravi",
+       "mobile": "9999999999",
+       "email": "ravi@example.com",
+       "bookedHours": 2,
+       "actualHours": 3.5,
+       "totalBilledHours": 4,
+       "extraHours": 2,
+       "ratePerHour": 100,
+       "baseAmount": 200,
+       "extraAmount": 200,
+       "totalAmount": 400,
+       "paymentMethod": "upi",
+       "paymentStatus": "paid"
+     }
+   }
+
+--------------------------------------------------------------------------------
+17. GET USER BILLS
+--------------------------------------------------------------------------------
+   Method:  GET
+   URL:     /api/user/billing?userId=662f...
+   Auth:    Yes (Bearer Token)
+   Body:    None
+
+   Use Case: Get all bills for a specific user by their userId.
+
+   Response (200):
+   {
+     "success": true,
+     "message": "Bills retrieved successfully.",
+     "count": 3,
+     "data": [
+       {
+         "_id": "663b...",
+         "billNumber": "0001",
+         "userId": { "_id": "662f...", "name": "Ravi", "email": "...", "phone": "...", "qrCode": "..." },
+         "staffId": { "_id": "662e...", "name": "John Doe", "mobile": "9876543210" },
+         "baseAmount": 300,
+         "extraAmount": 120,
+         "totalAmount": 420,
+         "paymentStatus": "unpaid",
+         "billingDate": "2026-04-14T10:15:00.000Z"
+       }
+     ]
+   }
+
+--------------------------------------------------------------------------------
+18. GET STAFF BILLS (My Bills)
+--------------------------------------------------------------------------------
+   Method:  GET
+   URL:     /api/user/staff-bills
+   Auth:    Yes (Bearer Token)
+   Body:    None
+
+   Use Case: Get all bills created by the currently logged-in staff.
+
+   Response (200):
+   {
+     "success": true,
+     "message": "Staff bills retrieved successfully.",
+     "staffName": "John Doe",
+     "staffMobile": "9876543210",
+     "totalBills": 5,
+     "data": [
+       {
+         "billId": "663b...",
+         "billNumber": "0001",
+         "userName": "Ravi",
+         "userMobile": "9999999999",
+         "userEmail": "ravi@example.com",
+         "bookedHours": 3,
+         "actualHours": 4.0,
+         "extraHours": 1,
+         "baseAmount": 300,
+         "extraAmount": 120,
+         "totalAmount": 420,
+         "paymentMethod": "cash",
+         "paymentStatus": "unpaid",
+         "extraDeductionStatus": "pending",
+         "description": "Window seat",
+         "billingDate": "2026-04-14T10:15:00.000Z"
+       }
+     ]
+   }
+
+--------------------------------------------------------------------------------
+19. EXTRA TIME DEDUCTION
+--------------------------------------------------------------------------------
+   Method:  POST
+   URL:     /api/user/extra-deduction
+   Auth:    Yes (Bearer Token)
+   Body:
+   {
+     "billId": "663b...",
+     "paymentMethod": "card"              // optional
+   }
+
+   Use Case: After checkout, if user has extra time charges pending,
+             use this to mark them as collected/deducted.
+
+   Response (200):
+   {
+     "success": true,
+     "message": "Extra time charges deducted successfully.",
+     "data": {
+       "billId": "663b...",
+       "billNumber": "0001",
+       "userName": "Ravi",
+       "userMobile": "9999999999",
+       "bookedHours": 3,
+       "actualHours": 4.0,
+       "extraHours": 1,
+       "ratePerHour": 120,
+       "baseAmount": 300,
+       "extraAmount": 120,
+       "totalAmount": 420,
+       "paymentMethod": "card",
+       "paymentStatus": "paid",
+       "extraDeductionStatus": "deducted",
+       "extraDeductedAt": "2026-04-14T15:00:00.000Z"
+     }
+   }
+
+
+================================================================================
+                        POSTMAN TESTING ORDER
+================================================================================
+
+1.  GET  /api/health                     → Check server is running
+2.  POST /api/staff/signup               → Register staff
+3.  POST /api/staff/login                → Login (copy the "token")
+    ---  Set Header: Authorization: Bearer <token>  ---
+4.  PUT  /api/staff/update-profile       → Update staff name/email
+5.  POST /api/staff/change-password      → Change password
+6.  POST /api/staff/forgot-password      → Step 1: Request OTP
+7.  POST /api/staff/forgot-password      → Step 2: Reset with OTP
+8.  GET  /api/staff/list                 → View all staff members
+9.  GET  /api/staff/users                → View all users
+10. GET  /api/user/details?qr_code=...   → Scan QR & get user info
+11. POST /api/staff/checkin              → Check-in user (creates bill + attendance)
+12. GET  /api/staff/attendance-history?status=checked_in  → View active check-ins
+13. POST /api/staff/checkout             → Check-out user (by attendanceId)
+14. GET  /api/staff/attendance-history    → View all history (checkedInBy + checkedOutBy)
+15. POST /api/user/checkin               → Check-in user (by billId)
+16. POST /api/user/checkout              → Check-out user (by billId)
+17. POST /api/user/billing               → Create manual bill (walk-in)
+18. GET  /api/user/billing?userId=...    → Get user's bills
+19. GET  /api/user/staff-bills           → Get logged-in staff's bills
+20. POST /api/user/extra-deduction       → Collect extra time charges
+21. POST /api/staff/logout               → Logout (shows inTime & outTime)
+
+
+================================================================================
+                        TWO CHECK-IN/CHECK-OUT FLOWS
+================================================================================
+
+FLOW A: Staff Route (Direct)
+   Staff Checkin → creates Attendance + Billing together
+   Staff Checkout → uses attendanceId
+   Any staff can checkout another staff's check-in
+
+FLOW B: User Route (Bill-based)
+   Create Bill first (POST /api/user/billing)
+   User Checkin → uses billId
+   User Checkout → uses billId
+   Any staff can checkout another staff's check-in
+
+
+================================================================================
+                     CROSS-STAFF CHECKOUT EXPLAINED
+================================================================================
+
+Example:
+  - Staff "John" checks in user "Ravi" at 10:15 AM
+  - John's shift ends, he logs out
+  - Staff "Jane" logs in for evening shift
+  - Jane checks out user "Ravi" at 2:15 PM
+
+  The checkout response & attendance history will show:
+    checkedInBy:  { name: "John Doe",   time: "10:15 AM" }
+    checkedOutBy: { name: "Jane Smith",  time: "2:15 PM"  }
+
+  This works on BOTH routes:
+    POST /api/staff/checkout   (by attendanceId)
+    POST /api/user/checkout    (by billId)
+
+================================================================================
+
+
+================================================================================
+                         UPDATE LOG — April 14, 2026
+================================================================================
+
+ROUND 1: DNS & DB Optimization
+-------------------------------
+File: config/db.js
+  - Added Google Public DNS (8.8.8.8, 8.8.4.4) for faster resolution
+  - Added MongoDB connection pool settings (maxPoolSize, minPoolSize)
+  - Added socket/connect timeout and heartbeat config
+
+ROUND 2: Staff Login/Logout + Check-in/Check-out
+--------------------------------------------------
+Files: models/Staff.js, routes/staff.js
+
+  Staff Model — New fields added:
+    • isLoggedIn     (Boolean)  — tracks if staff is currently logged in
+    • lastLoginAt    (Date)     — records login/in-time
+    • lastLogoutAt   (Date)     — records logout/out-time
+
+  Updated APIs:
+    • POST /api/staff/login    — now sets isLoggedIn=true, records lastLoginAt,
+                                  returns "inTime" in response
+
+  New APIs:
+    • POST /api/staff/logout   — sets isLoggedIn=false, records lastLogoutAt,
+                                  returns inTime + outTime
+    • POST /api/staff/checkin  — staff checks in user, creates Attendance + Billing
+    • POST /api/staff/checkout — staff checks out user by attendanceId
+
+ROUND 3: Typo & Cross-reference Fix
+-------------------------------------
+File: routes/staff.js
+
+  • Checkin API now accepts BOTH "userId" and "id" from request body
+    (previously only "userId" worked, passing "id" silently created walk-in)
+  • Fixed: duplicate check-in query now uses user._id instead of raw string
+  • Fixed: user.phone null crash — fallback to "N/A" when phone is null
+  • Fixed: Attendance/Billing userId now uses user._id (proper ObjectId)
+
+ROUND 4: Lists, History & Cross-Staff Checkout
+------------------------------------------------
+Files: models/Attendance.js, routes/staff.js, routes/user.js
+
+  Attendance Model — New field added:
+    • checkoutStaffId (ObjectId, ref: Staff) — tracks who performed checkout
+
+  New APIs:
+    • GET /api/staff/list              — all staff members with login status
+    • GET /api/staff/users             — all users with isCheckedIn status
+    • GET /api/staff/attendance-history — full history with filters:
+        ?status=checked_in|checked_out
+        ?userId=...
+        ?staffId=...
+        ?date=2026-04-14
+
+  Updated APIs:
+    • POST /api/staff/checkout  — now saves checkoutStaffId,
+                                   response changed: "staff" → "checkedInBy" + "checkedOutBy"
+    • POST /api/user/checkout   — same cross-staff tracking,
+                                   added "checkedInBy" + "checkedOutBy" to response
+
+
+================================================================================
+                     FILES MODIFIED — QUICK REFERENCE
+================================================================================
+
+  config/db.js           → DNS + connection pool optimization
+  models/Staff.js        → Added isLoggedIn, lastLoginAt, lastLogoutAt
+  models/Attendance.js   → Added checkoutStaffId
+  routes/staff.js        → Login tracking, logout, checkin, checkout,
+                            staff list, users list, attendance history
+  routes/user.js         → Checkout now saves checkoutStaffId,
+                            response includes checkedInBy/checkedOutBy
+  API_LIST.txt           → This documentation file
+
+
+================================================================================
+                     COMPLETE API QUICK REFERENCE TABLE
+================================================================================
+
+  #   METHOD  URL                              AUTH    DESCRIPTION
+  --- ------  -------------------------------- ------  ---------------------------
+  1   GET     /api/health                      No      Server health check
+  2   POST    /api/staff/signup                No      Register staff
+  3   POST    /api/staff/login                 No      Staff login (returns token)
+  4   POST    /api/staff/logout                Yes     Staff logout (in/out time)
+  5   PUT     /api/staff/update-profile        Yes     Update name/email/image
+  6   POST    /api/staff/change-password       Yes     Change password
+  7   POST    /api/staff/forgot-password       No      OTP request + password reset
+  8   POST    /api/staff/checkin               Yes     Check-in user
+  9   POST    /api/staff/checkout              Yes     Check-out user (attendanceId)
+  10  GET     /api/staff/list                  Yes     All staff list
+  11  GET     /api/staff/users                 Yes     All users list
+  12  GET     /api/staff/attendance-history     Yes     Attendance history + filters
+  13  GET     /api/user/details                Yes     User details by QR code
+  14  POST    /api/user/checkin                Yes     Check-in by billId
+  15  POST    /api/user/checkout               Yes     Check-out by billId
+  16  POST    /api/user/billing                Yes     Create manual bill
+  17  GET     /api/user/billing                Yes     Get user's bills
+  18  GET     /api/user/staff-bills            Yes     Get my bills (staff)
+  19  POST    /api/user/extra-deduction        Yes     Collect extra charges
+
+================================================================================
